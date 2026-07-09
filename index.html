@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso · Monitoreo RBU</title>
+<style>
+  :root {
+    --azul-950: #0b1d33;
+    --azul-900: #122a47;
+    --azul-700: #1b3a5c;
+    --azul-500: #2f5a85;
+    --azul-300: #7fa6c9;
+    --oro-500: #b8902f;
+    --oro-400: #d4af5a;
+    --gris-50: #f6f7f9;
+    --gris-100: #eceef1;
+    --gris-300: #c7ccd3;
+    --gris-600: #5b6470;
+    --gris-900: #1c2128;
+    --rojo-600: #9b2226;
+    --rojo-50: #fbeceb;
+    --verde-600: #2a6f4f;
+    --verde-50: #e9f5ee;
+    --serif: 'Iowan Old Style', 'Georgia', 'Times New Roman', serif;
+    --sans: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono: 'SF Mono', 'Consolas', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    background: var(--azul-950);
+    color: var(--gris-900);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Panel izquierdo institucional */
+  .panel-izquierdo {
+    flex: 1.1;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(212,175,90,0.08), transparent 45%),
+      linear-gradient(160deg, var(--azul-950) 0%, var(--azul-900) 55%, var(--azul-700) 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 56px 64px;
+    position: relative;
+  }
+
+  .panel-izquierdo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 64px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 64px);
+    pointer-events: none;
+  }
+
+  .marca {
+    position: relative;
+    z-index: 1;
+  }
+
+  .marca-sello {
+    width: 52px;
+    height: 52px;
+    border: 1.5px solid var(--oro-400);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--serif);
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--oro-400);
+    margin-bottom: 28px;
+  }
+
+  .marca-eyebrow {
+    font-size: 0.72em;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--azul-300);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .marca h1 {
+    font-family: var(--serif);
+    font-size: 2.6em;
+    font-weight: 600;
+    line-height: 1.15;
+    margin-bottom: 18px;
+    max-width: 480px;
+  }
+
+  .marca p {
+    font-size: 1em;
+    color: rgba(255,255,255,0.72);
+    max-width: 420px;
+    line-height: 1.6;
+  }
+
+  .pie-panel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .pie-divisor {
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+    width: 100%;
+  }
+
+  .pie-aviso {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .pie-aviso-icono {
+    font-family: var(--serif);
+    color: var(--oro-400);
+    font-size: 1.1em;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  .pie-aviso-texto {
+    font-size: 0.82em;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.55;
+  }
+
+  .pie-aviso-texto strong {
+    color: rgba(255,255,255,0.85);
+  }
+
+  /* Panel derecho — formulario */
+  .panel-derecho {
+    flex: 1;
+    background: var(--gris-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .tarjeta-login {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .tarjeta-login-header {
+    margin-bottom: 32px;
+  }
+
+  .tarjeta-login-header .eyebrow {
+    font-size: 0.72em;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--oro-500);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .tarjeta-login-header h2 {
+    font-family: var(--serif);
+    font-size: 1.7em;
+    color: var(--gris-900);
+    font-weight: 600;
+  }
+
+  .tarjeta-login-header p {
+    color: var(--gris-600);
+    font-size: 0.9em;
+    margin-top: 6px;
+  }
+
+  .mensaje-estado {
+    padding: 13px 16px;
+    border-radius: 6px;
+    margin-bottom: 22px;
+    display: none;
+    font-size: 0.88em;
+    line-height: 1.5;
+    border-left: 3px solid transparent;
+  }
+
+  .mensaje-estado.error {
+    background: var(--rojo-50);
+    color: var(--rojo-600);
+    border-left-color: var(--rojo-600);
+  }
+
+  .mensaje-estado.success {
+    background: var(--verde-50);
+    color: var(--verde-600);
+    border-left-color: var(--verde-600);
+  }
+
+  .campo {
+    margin-bottom: 20px;
+  }
+
+  .campo label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 0.82em;
+    font-weight: 600;
+    color: var(--gris-900);
+    letter-spacing: 0.01em;
+  }
+
+  .campo-input-wrap {
+    position: relative;
+  }
+
+  .campo input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid var(--gris-300);
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-family: var(--sans);
+    color: var(--gris-900);
+    background: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .campo input::placeholder { color: #aab0b8; }
+
+  .campo input:focus {
+    outline: none;
+    border-color: var(--azul-500);
+    box-shadow: 0 0 0 3px rgba(47,90,133,0.12);
+  }
+
+  .toggle-pass {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--gris-600);
+    font-size: 0.78em;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 4px;
+  }
+
+  .btn-acceder {
+    width: 100%;
+    padding: 13px;
+    background: var(--azul-700);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-acceder:hover { background: var(--azul-900); }
+  .btn-acceder:disabled { opacity: 0.7; cursor: not-allowed; }
+
+  .spinner {
+    display: none;
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: girar 0.7s linear infinite;
+  }
+
+  @keyframes girar { to { transform: rotate(360deg); } }
+
+  .tarjeta-footer {
+    margin-top: 28px;
+    text-align: center;
+  }
+
+  .tarjeta-footer p {
+    font-size: 0.78em;
+    color: var(--gris-600);
+  }
+
+  .info-tecnica {
+    margin-top: 10px;
+    font-size: 0.72em;
+    color: #9aa1ab;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+
+  @media (max-width: 860px) {
+    body { flex-direction: column; }
+    .panel-izquierdo { padding: 40px 32px; min-height: 280px; }
+    .marca h1 { font-size: 1.9em; }
+    .pie-panel { display: none; }
+    .panel-derecho { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="panel-izquierdo">
+    <div class="marca">
+      <div class="marca-sello">R</div>
+      <div class="marca-eyebrow">Sistema de Monitoreo</div>
+      <h1>Motor de Búsqueda RBU</h1>
+      <p>Plataforma interna de consulta del padrón para seguimiento y priorización de visitas. Acceso exclusivo para personal autorizado.</p>
+    </div>
+
+    <div class="pie-panel">
+      <div class="pie-divisor"></div>
+      <div class="pie-aviso">
+        <div class="pie-aviso-icono">§</div>
+        <div class="pie-aviso-texto">
+          <strong>Manejo de datos personales.</strong> Toda consulta queda registrada con fines de auditoría, conforme a la normativa de protección de datos personales vigente.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-derecho">
+    <div class="tarjeta-login">
+      <div class="tarjeta-login-header">
+        <div class="eyebrow">Acceso restringido</div>
+        <h2>Iniciar sesión</h2>
+        <p>Ingresa tus credenciales institucionales para continuar.</p>
+      </div>
+
+      <div id="statusMessage" class="mensaje-estado"></div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" autocomplete="on">
+        <div class="campo">
+          <label for="usuario">Usuario</label>
+          <input type="text" id="usuario" placeholder="usuario.institucional" required autocomplete="username">
+        </div>
+
+        <div class="campo">
+          <label for="password">Contraseña</label>
+          <div class="campo-input-wrap">
+            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="toggle-pass" id="togglePass" tabindex="-1">Ver</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-acceder" id="btnLogin">
+          <span class="spinner" id="spinner"></span>
+          <span id="btnText">Ingresar al sistema</span>
+        </button>
+      </form>
+
+      <div class="tarjeta-footer">
+        <p>Monitoreo RBU © 2026 — Acceso registrado y auditado</p>
+        <div class="info-tecnica" id="footerInfo"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Si sirves el frontend desde GitHub Pages o un host estático,
+  // define aquí la URL pública de tu backend Node/Express.
+  // El flujo debe ser: GitHub Pages -> https://tu-app.onrender.com -> Supabase
+  // Ejemplo:
+  // window.API_BASE_URL = 'https://tu-app.onrender.com/api';
+
+  function getApiBaseUrl() {
+    if (window.API_BASE_URL) {
+      return window.API_BASE_URL.replace(/\/+$/, '');
+    }
+
+    const protocol = window.location.protocol;
+    const host = window.location.hostname;
+    const port = window.location.port;
+
+    // En desarrollo local (localhost, 127.0.0.1) o archivo directo, apunta al backend local
+    if (protocol === 'file:' || host === 'localhost' || host === '127.0.0.1') {
+      return 'http://localhost:3000/api';
+    }
+
+    // En producción, usa el mismo origen (asume reverse proxy)
+    return `${protocol}//${host}${port ? `:${port}` : ''}/api`;
+  }
+
+  const apiBaseUrl = getApiBaseUrl();
+
+  async function leerRespuestaJson(response) {
+    const contentType = response.headers.get('content-type') || '';
+    const texto = await response.text();
+    if (!contentType.includes('application/json')) {
+      throw new Error('El servidor no devolvió JSON. Asegúrate de que el backend Node.js esté accesible y de que la URL de la API sea correcta.');
+    }
+    if (!texto) return {};
+    try { return JSON.parse(texto); }
+    catch (e) { throw new Error('Respuesta no válida del servidor. Reinicia el servidor e intenta de nuevo.'); }
+  }
+
+  function mostrarMensaje(mensaje, tipo) {
+    const el = document.getElementById('statusMessage');
+    el.textContent = mensaje;
+    el.className = `mensaje-estado ${tipo}`;
+    el.style.display = 'block';
+  }
+
+  function ocultarMensaje() {
+    document.getElementById('statusMessage').style.display = 'none';
+  }
+
+  function mostrarSpinner(mostrar) {
+    document.getElementById('spinner').style.display = mostrar ? 'inline-block' : 'none';
+    document.getElementById('btnLogin').disabled = mostrar;
+    document.getElementById('btnText').textContent = mostrar ? 'Verificando…' : 'Ingresar al sistema';
+  }
+
+  document.getElementById('togglePass').addEventListener('click', () => {
+    const input = document.getElementById('password');
+    const btn = document.getElementById('togglePass');
+    if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Ocultar'; }
+    else { input.type = 'password'; btn.textContent = 'Ver'; }
+  });
+
+  async function handleLogin(event) {
+    event.preventDefault();
+    const usuario = document.getElementById('usuario').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!usuario || !password) {
+      mostrarMensaje('Usuario y contraseña son requeridos', 'error');
+      return;
+    }
+
+    mostrarSpinner(true);
+    ocultarMensaje();
+
+    let controller = null;
+    let timeoutId = null;
+    try {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const response = await fetch(`${apiBaseUrl}/login`, {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, password })
+      });
+
+      const data = await leerRespuestaJson(response);
+
+      if (!response.ok) {
+        mostrarMensaje(data.error || 'Error en la autenticación', 'error');
+        mostrarSpinner(false);
+        return;
+      }
+
+      sessionStorage.setItem('authToken', data.token);
+      sessionStorage.setItem('usuario', usuario);
+
+      mostrarMensaje('Acceso concedido. Redirigiendo…', 'success');
+      // Usar setTimeout con flag de sesión para evitar redirecciones múltiples
+      if (!sessionStorage.getItem('redirecting')) {
+        sessionStorage.setItem('redirecting', '1');
+        setTimeout(() => {
+          window.location.href = 'busqueda.html';
+        }, 700);
+      }
+
+    } catch (error) {
+      const mensaje = error.name === 'AbortError'
+        ? 'La conexión tardó demasiado. Verifica que el servidor esté disponible.'
+        : 'Error de conexión: ' + error.message;
+      mostrarMensaje(mensaje, 'error');
+      mostrarSpinner(false);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  }
+
+  document.getElementById('usuario').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('password').focus();
+  });
+
+  function actualizarFooterInfo() {
+    const footer = document.getElementById('footerInfo');
+    if (window.location.protocol === 'file:') {
+      footer.textContent = 'Abre esta página desde http://localhost:3000/ en lugar de file:// para evitar errores de conexión.';
+    }
+  }
+
+  window.addEventListener('load', () => {
+    actualizarFooterInfo();
+    if (sessionStorage.getItem('authToken')) {
+      window.location.href = 'busqueda.html';
+    }
+  });
+</script>
+</body>
+</html>

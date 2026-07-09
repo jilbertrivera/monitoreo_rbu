@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motor de Búsqueda · Monitoreo RBU</title>
+<style>
+  :root {
+    --azul-950: #0b1d33;
+    --azul-900: #122a47;
+    --azul-700: #1b3a5c;
+    --azul-500: #2f5a85;
+    --azul-300: #7fa6c9;
+    --azul-100: #e4ecf3;
+    --oro-500: #b8902f;
+    --oro-400: #d4af5a;
+    --gris-50: #f6f7f9;
+    --gris-100: #eceef1;
+    --gris-200: #dde1e6;
+    --gris-300: #c7ccd3;
+    --gris-600: #5b6470;
+    --gris-900: #1c2128;
+    --rojo-600: #9b2226;
+    --rojo-50: #fbeceb;
+    --verde-600: #2a6f4f;
+    --verde-50: #e9f5ee;
+    --serif: 'Iowan Old Style', 'Georgia', 'Times New Roman', serif;
+    --sans: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono: 'SF Mono', 'Consolas', monospace;
+    --radio: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--gris-50);
+    color: var(--gris-900);
+    min-height: 100vh;
+  }
+
+  /* ── Barra superior institucional ─────────────────────────────────── */
+  .topbar {
+    background: linear-gradient(135deg, var(--azul-950) 0%, var(--azul-700) 100%);
+    color: white;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+  }
+
+  .topbar-marca {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .topbar-sello {
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--oro-400);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--serif);
+    font-weight: 700;
+    color: var(--oro-400);
+    font-size: 1em;
+    flex-shrink: 0;
+  }
+
+  .topbar-marca-texto h1 {
+    font-family: var(--serif);
+    font-size: 1.15em;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .topbar-marca-texto span {
+    font-size: 0.7em;
+    color: var(--azul-300);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .topbar-usuario {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .topbar-usuario-info {
+    text-align: right;
+  }
+
+  .topbar-usuario-info .label {
+    font-size: 0.68em;
+    color: var(--azul-300);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .topbar-usuario-info .nombre {
+    font-size: 0.9em;
+    font-weight: 600;
+  }
+
+  .btn-logout {
+    background: rgba(255,255,255,0.08);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.82em;
+    transition: background 0.15s;
+  }
+
+  .btn-logout:hover { background: rgba(255,255,255,0.16); }
+
+  /* ── Layout principal ─────────────────────────────────────────────── */
+  .main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 28px 32px 60px;
+  }
+
+  .aviso-confidencial {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--azul-100);
+    border: 1px solid #c9d8e6;
+    color: var(--azul-700);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.82em;
+    margin-bottom: 24px;
+  }
+
+  .aviso-confidencial .icono { font-family: var(--serif); font-weight: 700; color: var(--azul-500); }
+
+  /* ── Tarjeta de búsqueda ──────────────────────────────────────────── */
+  .card {
+    background: white;
+    border-radius: var(--radio);
+    border: 1px solid var(--gris-200);
+    box-shadow: 0 1px 3px rgba(11,29,51,0.06);
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .card-titulo {
+    font-family: var(--serif);
+    font-size: 1.25em;
+    font-weight: 600;
+    color: var(--gris-900);
+    margin-bottom: 4px;
+  }
+
+  .card-subtitulo {
+    font-size: 0.85em;
+    color: var(--gris-600);
+    margin-bottom: 22px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--gris-200);
+  }
+
+  .tab {
+    padding: 10px 18px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.88em;
+    color: var(--gris-600);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+
+  .tab:hover { color: var(--azul-700); }
+
+  .tab.active {
+    color: var(--azul-700);
+    border-bottom-color: var(--oro-500);
+  }
+
+  .search-form { display: grid; gap: 18px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 7px; }
+
+  label {
+    font-weight: 600;
+    font-size: 0.82em;
+    color: var(--gris-900);
+  }
+
+  input[type="text"], select {
+    padding: 11px 13px;
+    border: 1.5px solid var(--gris-300);
+    border-radius: 6px;
+    font-size: 0.92em;
+    font-family: var(--sans);
+    background: white;
+    color: var(--gris-900);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  input[type="text"]::placeholder { color: #aab0b8; }
+
+  input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: var(--azul-500);
+    box-shadow: 0 0 0 3px rgba(47,90,133,0.12);
+  }
+
+  .advanced-search {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .btn-container { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+
+  button { border: none; border-radius: 6px; cursor: pointer; font-family: var(--sans); }
+
+  .btn-buscar {
+    padding: 12px 24px;
+    background: var(--azul-700);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9em;
+    flex: 1;
+    min-width: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    transition: background 0.15s;
+  }
+
+  .btn-buscar:hover { background: var(--azul-900); }
+  .btn-buscar:disabled { opacity: 0.65; cursor: not-allowed; }
+
+  .btn-limpiar {
+    padding: 12px 20px;
+    background: white;
+    color: var(--gris-600);
+    border: 1.5px solid var(--gris-300);
+    font-weight: 600;
+    font-size: 0.9em;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn-limpiar:hover { background: var(--gris-100); color: var(--gris-900); }
+
+  .spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: girar 0.7s linear infinite;
+  }
+
+  @keyframes girar { to { transform: rotate(360deg); } }
+
+  .status {
+    padding: 13px 16px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    display: none;
+    font-size: 0.86em;
+    border-left: 3px solid transparent;
+  }
+
+  .status.success { background: var(--verde-50); color: var(--verde-600); border-left-color: var(--verde-600); }
+  .status.error { background: var(--rojo-50); color: var(--rojo-600); border-left-color: var(--rojo-600); }
+  .status.info { background: var(--azul-100); color: var(--azul-700); border-left-color: var(--azul-500); }
+
+  /* ── Resultados ────────────────────────────────────────────────────── */
+  .results-card {
+    background: white;
+    border-radius: var(--radio);
+    border: 1px solid var(--gris-200);
+    box-shadow: 0 1px 3px rgba(11,29,51,0.06);
+    padding: 28px;
+    display: none;
+  }
+
+  .results-card.active { display: block; }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--gris-200);
+  }
+
+  .results-header h2 {
+    font-family: var(--serif);
+    font-size: 1.2em;
+    color: var(--gris-900);
+    font-weight: 600;
+  }
+
+  .results-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .result-count {
+    background: var(--azul-700);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.82em;
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .view-toggle { display: flex; gap: 8px; }
+
+  .view-toggle button, .export-btn {
+    padding: 7px 14px;
+    border: 1.5px solid var(--gris-300);
+    background: white;
+    color: var(--gris-600);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.82em;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .view-toggle button.active {
+    background: var(--azul-700);
+    color: white;
+    border-color: var(--azul-700);
+  }
+
+  .view-toggle button:hover:not(.active), .export-btn:hover {
+    border-color: var(--azul-500);
+    color: var(--azul-700);
+  }
+
+  .export-group { display: flex; gap: 8px; }
+
+  .results-table { width: 100%; border-collapse: collapse; font-size: 0.86em; }
+
+  .results-table thead { background: var(--azul-700); color: white; position: sticky; top: 0; }
+
+  .results-table th {
+    padding: 11px 10px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.92em;
+  }
+
+  .results-table td {
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--gris-100);
+    color: var(--gris-900);
+  }
+
+  .results-table tbody tr:hover { background: var(--gris-50); }
+  .results-table tbody tr:nth-child(even) { background: rgba(246,247,249,0.5); }
+
+  .record-card {
+    background: white;
+    border: 1px solid var(--gris-200);
+    border-left: 3px solid var(--oro-500);
+    border-radius: 6px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .record-card h3 {
+    margin: 0 0 14px 0;
+    color: var(--azul-700);
+    font-family: var(--serif);
+    font-size: 1.05em;
+    font-weight: 600;
+  }
+
+  .record-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .field-item { display: flex; flex-direction: column; gap: 3px; }
+
+  .field-label {
+    font-weight: 600;
+    color: var(--gris-600);
+    font-size: 0.72em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .field-value { color: var(--gris-900); font-size: 0.92em; word-break: break-word; }
+
+  .table-wrapper { overflow-x: auto; border-radius: 6px; border: 1px solid var(--gris-200); }
+
+  .no-results {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--gris-600);
+  }
+
+  .no-results .icono { font-size: 2em; margin-bottom: 10px; opacity: 0.4; }
+
+  /* ── Paginación ────────────────────────────────────────────────────── */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+
+  .pagination button {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1.5px solid var(--gris-300);
+    background: white;
+    color: var(--gris-900);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .pagination button:hover:not(:disabled) { border-color: var(--azul-500); color: var(--azul-700); }
+  .pagination button.active { background: var(--azul-700); color: white; border-color: var(--azul-700); }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pagination .ellipsis { color: var(--gris-600); padding: 0 4px; font-size: 0.85em; }
+
+  .footer {
+    text-align: center;
+    color: var(--gris-600);
+    margin-top: 32px;
+    font-size: 0.8em;
+  }
+
+  @media (max-width: 768px) {
+    .topbar { padding: 0 18px; }
+    .topbar-marca-texto h1 { font-size: 1em; }
+    .main { padding: 20px 16px 40px; }
+    .card, .results-card { padding: 20px; }
+    .advanced-search { grid-template-columns: 1fr; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .export-group { justify-content: stretch; }
+    .export-btn { flex: 1; justify-content: center; }
+  }
+
+  .skeleton-row td {
+    padding: 14px 10px;
+  }
+  .skeleton-bar {
+    height: 12px;
+    background: linear-gradient(90deg, var(--gris-100) 25%, var(--gris-200) 50%, var(--gris-100) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 4px;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .textarea-campo {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--gris-300);
+    border-radius: 6px;
+    font-size: 0.88em;
+    font-family: var(--mono);
+    resize: vertical;
+    color: var(--gris-900);
+    background: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .textarea-campo:focus {
+    outline: none;
+    border-color: var(--azul-500);
+    box-shadow: 0 0 0 3px rgba(47,90,133,0.12);
+  }
+  .contador-campo {
+    font-size: 0.78em;
+    font-weight: 400;
+    color: var(--gris-600);
+    margin-left: 4px;
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-marca">
+      <div class="topbar-sello">R</div>
+      <div class="topbar-marca-texto">
+        <h1>Motor de Búsqueda</h1>
+        <span>Monitoreo RBU</span>
+      </div>
+    </div>
+    <div class="topbar-usuario">
+      <div class="topbar-usuario-info">
+        <div class="label">Sesión activa</div>
+        <div class="nombre" id="usuarioActual">Usuario</div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="aviso-confidencial">
+      <span class="icono">§</span>
+      <span>&nbsp;Esta plataforma contiene datos personales del padrón. Toda consulta queda registrada con fines de auditoría.</span>
+    </div>
+
+    <section class="card">
+      <div class="card-titulo">Consultar padrón</div>
+      <div class="card-subtitulo">Busca por un campo específico o combina varios criterios.</div>
+
+      <div class="status" id="status"></div>
+
+      <div class="tabs">
+        <div class="tab active" data-tipo="simple" onclick="cambiarTipoBusqueda('simple')">Búsqueda simple</div>
+        <div class="tab" data-tipo="avanzada" onclick="cambiarTipoBusqueda('avanzada')">Búsqueda avanzada</div>
+        <div class="tab" data-tipo="multiple" onclick="cambiarTipoBusqueda('multiple')">Búsqueda múltiple</div>
+        <div class="tab" data-tipo="multiple-avanzada" onclick="cambiarTipoBusqueda('multiple-avanzada')">Búsqueda múltiple avanzada</div>
+      </div>
+
+      <!-- BÚSQUEDA SIMPLE -->
+      <form id="busquedaSimple" class="search-form" onsubmit="event.preventDefault(); buscarSimple(1);">
+        <div class="form-group">
+          <label for="campo">Campo de búsqueda</label>
+          <select id="campo">
+            <option value="">— Selecciona un campo —</option>
+            <option value="VC_DNI">DNI</option>
+            <option value="VC_NOMBRE">Nombre</option>
+            <option value="VC_PATERNO">Apellido paterno</option>
+            <option value="VC_MATERNO">Apellido materno</option>
+            <option value="VC_DEPARTAMENTO">Departamento</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="criterio">Criterio de búsqueda</label>
+          <input type="text" id="criterio" placeholder="Ingresa el texto a buscar…" maxlength="100">
+        </div>
+        <div class="btn-container">
+          <button type="submit" class="btn-buscar" id="btnBuscarSimple">
+            <span class="spinner" id="spinner-simple"></span>Buscar
+          </button>
+          <button type="button" class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+        </div>
+      </form>
+
+      <!-- BÚSQUEDA AVANZADA -->
+      <form id="busquedaAvanzada" class="search-form" style="display: none;" onsubmit="event.preventDefault(); buscarAvanzado(1);">
+        <div class="advanced-search">
+          <div class="form-group">
+            <label for="dni">DNI</label>
+            <input type="text" id="dni" placeholder="Ingresa DNI…" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" placeholder="Ingresa nombre…" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="paterno">Apellido paterno</label>
+            <input type="text" id="paterno" placeholder="Ingresa apellido paterno…" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="materno">Apellido materno</label>
+            <input type="text" id="materno" placeholder="Ingresa apellido materno…" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="departamento">Departamento</label>
+            <input type="text" id="departamento" placeholder="Ingresa departamento…" maxlength="100">
+          </div>
+        </div>
+        <div class="btn-container">
+          <button type="submit" class="btn-buscar" id="btnBuscarAvanzada">
+            <span class="spinner" id="spinner-avanzada"></span>Buscar
+          </button>
+          <button type="button" class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+      <!-- BÚSQUEDA MÚLTIPLE -->
+      <form id="busquedaMultiple" class="search-form" style="display: none;" onsubmit="event.preventDefault(); buscarMultiple(1);">
+        <div class="form-group">
+          <label for="campoMultiple">Campo de búsqueda</label>
+          <select id="campoMultiple">
+            <option value="">— Selecciona un campo —</option>
+            <option value="VC_DNI">DNI</option>
+            <option value="VC_NOMBRE">Nombre</option>
+            <option value="VC_PATERNO">Apellido paterno</option>
+            <option value="VC_MATERNO">Apellido materno</option>
+            <option value="VC_DEPARTAMENTO">Departamento</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="valoresMultiple">Valores a buscar <span style="font-weight:400;color:var(--gris-600)">(uno por línea o separados por coma · máx. 200)</span></label>
+          <textarea id="valoresMultiple" rows="6" placeholder="12345678&#10;87654321&#10;11223344" maxlength="10000"
+            style="width:100%;padding:10px 12px;border:1.5px solid var(--gris-300);border-radius:6px;font-size:0.93em;font-family:var(--mono);resize:vertical;color:var(--gris-900);background:white;"></textarea>
+          <div id="contadorValores" style="font-size:0.78em;color:var(--gris-600);margin-top:4px;">0 valores</div>
+        </div>
+        <div class="btn-container">
+          <button type="submit" class="btn-buscar" id="btnBuscarMultiple">
+            <span class="spinner" id="spinner-multiple"></span>Buscar todos
+          </button>
+          <button type="button" class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+        </div>
+      </form>
+
+      <!-- BÚSQUEDA MÚLTIPLE AVANZADA -->
+      <form id="busquedaMultipleAvanzada" class="search-form" style="display: none;" onsubmit="event.preventDefault(); buscarMultipleAvanzado(1);">
+        <div style="font-size:0.83em;color:var(--gris-600);margin-bottom:16px;line-height:1.55;">
+          Ingresa varios valores por campo (uno por línea o separados por coma). El sistema busca registros que coincidan con <strong>todos</strong> los campos que completes. Un solo valor usa búsqueda parcial; varios valores usan coincidencia exacta entre ellos.
+        </div>
+
+        <div class="advanced-search">
+          <div class="form-group">
+            <label for="maDni">DNI <span class="contador-campo" id="cnt-maDni"></span></label>
+            <textarea id="maDni" rows="3" placeholder="12345678&#10;87654321" maxlength="3000"
+              class="textarea-campo" oninput="actualizarContador('maDni','cnt-maDni')"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="maNombre">Nombre <span class="contador-campo" id="cnt-maNombre"></span></label>
+            <textarea id="maNombre" rows="3" placeholder="ANA&#10;JUAN" maxlength="3000"
+              class="textarea-campo" oninput="actualizarContador('maNombre','cnt-maNombre')"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="maPaterno">Apellido paterno <span class="contador-campo" id="cnt-maPaterno"></span></label>
+            <textarea id="maPaterno" rows="3" placeholder="GARCIA&#10;LOPEZ" maxlength="3000"
+              class="textarea-campo" oninput="actualizarContador('maPaterno','cnt-maPaterno')"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="maMaterno">Apellido materno <span class="contador-campo" id="cnt-maMaterno"></span></label>
+            <textarea id="maMaterno" rows="3" placeholder="TORRES&#10;RUIZ" maxlength="3000"
+              class="textarea-campo" oninput="actualizarContador('maMaterno','cnt-maMaterno')"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="maDepartamento">Departamento <span class="contador-campo" id="cnt-maDepartamento"></span></label>
+            <textarea id="maDepartamento" rows="3" placeholder="LIMA&#10;CUSCO" maxlength="3000"
+              class="textarea-campo" oninput="actualizarContador('maDepartamento','cnt-maDepartamento')"></textarea>
+          </div>
+        </div>
+
+        <div class="btn-container">
+          <button type="submit" class="btn-buscar" id="btnBuscarMAvanzada">
+            <span class="spinner" id="spinner-mavanzada"></span>Buscar
+          </button>
+          <button type="button" class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+        </div>
+      </form>
+
+    <!-- RESULTADOS -->
+    <section class="results-card" id="resultsContainer">
+      <div class="results-header">
+        <h2>Resultados de búsqueda</h2>
+        <div class="results-meta">
+          <div class="result-count" id="resultCount">0 registros</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="view-toggle">
+          <button class="active" onclick="cambiarVista('tarjetas')" id="btnTarjetas">Vista tarjetas</button>
+          <button onclick="cambiarVista('tabla')" id="btnTabla">Vista tabla</button>
+        </div>
+        <div class="export-group">
+          <button class="export-btn" onclick="exportar('excel')" id="btnExcel">⬇ Excel</button>
+          <button class="export-btn" onclick="exportar('pdf')" id="btnPdf">⬇ PDF</button>
+        </div>
+      </div>
+
+      <div id="resultsContent"></div>
+
+      <div class="pagination" id="paginacion"></div>
+    </section>
+
+    <div class="footer">
+      <p>Monitoreo RBU © 2026 · Conexión segura a Supabase</p>
+    </div>
+  </main>
+
+<script>
+  // Si sirves el frontend desde GitHub Pages o un host estático,
+  // define aquí la URL pública de tu backend Node/Express.
+  // El flujo debe ser: GitHub Pages -> https://tu-app.onrender.com -> Supabase
+  // Ejemplo:
+  // window.API_BASE_URL = 'https://tu-app.onrender.com/api';
+
+  function getApiBaseUrl() {
+    if (window.API_BASE_URL) {
+      return window.API_BASE_URL.replace(/\/+$/, '');
+    }
+
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3000/api';
+    return `${window.location.origin}/api`;
+  }
+
+  const apiBaseUrl = getApiBaseUrl();
+  const POR_PAGINA = 25;
+
+  let vistaActual = 'tarjetas';
+  let tipoBusquedaActual = 'simple';
+  let ultimosResultados = [];
+  let paginaActual = 1;
+  let totalPaginas = 1;
+  let totalRegistros = 0;
+
+  const ETIQUETAS_CAMPOS = {
+    VC_DNI: 'DNI', VC_CODIGO_UBIGEO: 'Código UBIGEO', VC_DEPARTAMENTO: 'Departamento',
+    VC_PROVINCIA: 'Provincia', VC_DISTRITO: 'Distrito', VC_CCPP: 'Centro poblado',
+    VC_SECTOR: 'Sector', VC_DIRECCION_P65: 'Dirección P65', VC_DIRECCION_DJ: 'Dirección DJ',
+    VC_DIRECCION_SISFOH: 'Dirección SISFOH', VC_PATERNO: 'Apellido paterno', VC_MATERNO: 'Apellido materno',
+    VC_NOMBRE: 'Nombre', VC_FECHA_NACIMIENTO: 'Fecha nacimiento', NM_EDAD: 'Edad',
+    VC_RANGO_EDAD: 'Rango edad', VC_SEXO: 'Sexo', VC_TELEFONO_TAYTA: 'Teléfono Tayta',
+    VC_CONTACTO: 'Contacto', VC_FECHA_INGRESO: 'Fecha ingreso', VC_FECHA_REINGRESO: 'Fecha reingreso',
+    VC_FECHA_ULTIMA_VISITA: 'Última visita', VC_FECHA_SINCRONIZACION: 'Fecha sincronización'
+  };
+
+  function getToken() { return sessionStorage.getItem('authToken'); }
+
+  async function leerRespuestaJson(response) {
+    const contentType = response.headers.get('content-type') || '';
+    const texto = await response.text();
+    if (!contentType.includes('application/json')) {
+      throw new Error('El servidor no devolvió JSON. Verifica que node server.js esté corriendo.');
+    }
+    if (!texto) return {};
+    try { return JSON.parse(texto); }
+    catch (e) { throw new Error('Respuesta no válida del servidor.'); }
+  }
+
+  function escapeHtml(valor) {
+    if (valor === null || valor === undefined) return '';
+    return String(valor)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  window.addEventListener('load', () => {
+    const token = getToken();
+    const usuario = sessionStorage.getItem('usuario');
+    if (!token) { window.location.href = 'index.html'; return; }
+    document.getElementById('usuarioActual').textContent = usuario || 'Usuario';
+
+    fetch(`${apiBaseUrl}/test-conexion`)
+      .then(r => r.json())
+      .then(data => { if (data.success) mostrarStatus('Conectado al servidor', 'info'); })
+      .catch(() => mostrarStatus('No se puede conectar al servidor. Verifica que esté corriendo.', 'error'));
+  });
+
+  function logout() {
+    if (confirm('¿Deseas cerrar sesión?')) {
+      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('usuario');
+      window.location.href = 'index.html';
+    }
+  }
+
+  function cambiarTipoBusqueda(tipo) {
+    tipoBusquedaActual = tipo;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tipo === tipo));
+    document.getElementById('busquedaSimple').style.display = tipo === 'simple' ? 'grid' : 'none';
+    document.getElementById('busquedaAvanzada').style.display = tipo === 'avanzada' ? 'grid' : 'none';
+    document.getElementById('busquedaMultiple').style.display = tipo === 'multiple' ? '' : 'none';
+    document.getElementById('busquedaMultipleAvanzada').style.display = tipo === 'multiple-avanzada' ? '' : 'none';
+  }
+
+  function mostrarStatus(mensaje, tipo) {
+    const status = document.getElementById('status');
+    status.textContent = mensaje;
+    status.className = `status ${tipo}`;
+    status.style.display = 'block';
+    if (tipo !== 'error') {
+      setTimeout(() => { status.style.display = 'none'; }, 4000);
+    }
+  }
+
+  function mostrarSpinner(id, mostrar) {
+    document.getElementById(id).style.display = mostrar ? 'inline-block' : 'none';
+  }
+
+  function mostrarEsqueleto() {
+    const container = document.getElementById('resultsContainer');
+    container.classList.add('active');
+    let filas = '';
+    for (let i = 0; i < 6; i++) {
+      filas += `<tr class="skeleton-row"><td colspan="6"><div class="skeleton-bar" style="width:${70 + Math.random()*25}%"></div></td></tr>`;
+    }
+    document.getElementById('resultsContent').innerHTML = `<table class="results-table"><tbody>${filas}</tbody></table>`;
+    document.getElementById('paginacion').innerHTML = '';
+  }
+
+  async function buscarSimple(pagina) {
+    const campo = document.getElementById('campo').value;
+    const criterio = document.getElementById('criterio').value;
+
+    if (!campo) { mostrarStatus('Selecciona un campo', 'error'); return; }
+    if (!criterio.trim()) { mostrarStatus('Ingresa un criterio de búsqueda', 'error'); return; }
+
+    mostrarSpinner('spinner-simple', true);
+    document.getElementById('btnBuscarSimple').disabled = true;
+    mostrarEsqueleto();
+
+    let controller = null, timeoutId = null;
+    try {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      const response = await fetch(`${apiBaseUrl}/buscar`, {
+        method: 'POST', mode: 'cors', cache: 'no-store', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify({ campo, criterio, pagina, porPagina: POR_PAGINA })
+      });
+
+      const data = await leerRespuestaJson(response);
+
+      if (response.status === 401) { sessionStorage.clear(); window.location.href = 'index.html'; return; }
+      if (response.status === 429) { mostrarStatus(data.error, 'error'); return; }
+      if (!response.ok) { mostrarStatus('Error: ' + (data.error || 'desconocido') + (data.detalle ? ' — ' + data.detalle : ''), 'error'); return; }
+
+      paginaActual = data.pagina; totalPaginas = data.totalPaginas; totalRegistros = data.total;
+      ultimosResultados = data.data;
+      mostrarResultados(data.data, data.total);
+      mostrarStatus(`Se encontraron ${data.total} registro(s)`, 'success');
+    } catch (error) {
+      const mensaje = error.name === 'AbortError' ? 'La búsqueda tardó demasiado.' : 'Error de conexión: ' + error.message;
+      mostrarStatus(mensaje, 'error');
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      mostrarSpinner('spinner-simple', false);
+      document.getElementById('btnBuscarSimple').disabled = false;
+    }
+  }
+
+  async function buscarAvanzado(pagina) {
+    const criterios = {
+      VC_DNI: document.getElementById('dni').value,
+      VC_NOMBRE: document.getElementById('nombre').value,
+      VC_PATERNO: document.getElementById('paterno').value,
+      VC_MATERNO: document.getElementById('materno').value,
+      VC_DEPARTAMENTO: document.getElementById('departamento').value
+    };
+
+    if (!Object.values(criterios).some(v => v.trim() !== '')) {
+      mostrarStatus('Ingresa al menos un criterio de búsqueda', 'error'); return;
+    }
+
+    mostrarSpinner('spinner-avanzada', true);
+    document.getElementById('btnBuscarAvanzada').disabled = true;
+    mostrarEsqueleto();
+
+    let controller = null, timeoutId = null;
+    try {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      const response = await fetch(`${apiBaseUrl}/buscar-avanzado`, {
+        method: 'POST', mode: 'cors', cache: 'no-store', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify({ criterios, pagina, porPagina: POR_PAGINA })
+      });
+
+      const data = await leerRespuestaJson(response);
+
+      if (response.status === 401) { sessionStorage.clear(); window.location.href = 'index.html'; return; }
+      if (response.status === 429) { mostrarStatus(data.error, 'error'); return; }
+      if (!response.ok) { mostrarStatus('Error: ' + (data.error || 'desconocido') + (data.detalle ? ' — ' + data.detalle : ''), 'error'); return; }
+
+      paginaActual = data.pagina; totalPaginas = data.totalPaginas; totalRegistros = data.total;
+      ultimosResultados = data.data;
+      mostrarResultados(data.data, data.total);
+      mostrarStatus(`Se encontraron ${data.total} registro(s)`, 'success');
+    } catch (error) {
+      const mensaje = error.name === 'AbortError' ? 'La búsqueda tardó demasiado.' : 'Error de conexión: ' + error.message;
+      mostrarStatus(mensaje, 'error');
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      mostrarSpinner('spinner-avanzada', false);
+      document.getElementById('btnBuscarAvanzada').disabled = false;
+    }
+  }
+
+  function buscarPagina(pagina) {
+    if (pagina < 1 || pagina > totalPaginas) return;
+    if (tipoBusquedaActual === 'simple') buscarSimple(pagina);
+    else if (tipoBusquedaActual === 'multiple') buscarMultiple(pagina);
+    else if (tipoBusquedaActual === 'multiple-avanzada') buscarMultipleAvanzado(pagina);
+    else buscarAvanzado(pagina);
+    document.querySelector('.results-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function mostrarResultados(datos, total) {
+    const container = document.getElementById('resultsContainer');
+    document.getElementById('resultCount').textContent = `${total} registro(s)`;
+    container.classList.add('active');
+
+    if (datos.length === 0) {
+      document.getElementById('resultsContent').innerHTML =
+        '<div class="no-results"><div class="icono">⌕</div>No se encontraron resultados para los criterios ingresados.</div>';
+      document.getElementById('paginacion').innerHTML = '';
+      return;
+    }
+
+    if (vistaActual === 'tarjetas') mostrarResultadosTarjetas(datos);
+    else mostrarResultadosTabla(datos);
+
+    renderPaginacion();
+  }
+
+  function mostrarResultadosTarjetas(datos) {
+    let html = '';
+    datos.forEach((row, idx) => {
+      const nombre = `${row.VC_PATERNO || ''} ${row.VC_MATERNO || ''} ${row.VC_NOMBRE || ''}`.trim();
+      html += `<div class="record-card"><h3>${escapeHtml(nombre) || 'Sin nombre'}</h3><div class="record-grid">`;
+      Object.entries(row).forEach(([key, value]) => {
+        html += `<div class="field-item"><div class="field-label">${escapeHtml(ETIQUETAS_CAMPOS[key] || key)}</div><div class="field-value">${escapeHtml(value) || '—'}</div></div>`;
+      });
+      html += `</div></div>`;
+    });
+    document.getElementById('resultsContent').innerHTML = html;
+  }
+
+  function mostrarResultadosTabla(datos) {
+    const columnas = Object.keys(datos[0]);
+    let html = '<div class="table-wrapper"><table class="results-table"><thead><tr>';
+    columnas.forEach(col => html += `<th>${escapeHtml(ETIQUETAS_CAMPOS[col] || col)}</th>`);
+    html += '</tr></thead><tbody>';
+    datos.forEach(row => {
+      html += '<tr>';
+      columnas.forEach(col => html += `<td>${escapeHtml(row[col]) || ''}</td>`);
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('resultsContent').innerHTML = html;
+  }
+
+  function renderPaginacion() {
+    const cont = document.getElementById('paginacion');
+    if (totalPaginas <= 1) { cont.innerHTML = ''; return; }
+
+    let html = `<button onclick="buscarPagina(${paginaActual - 1})" ${paginaActual === 1 ? 'disabled' : ''}>‹ Anterior</button>`;
+
+    const rango = 2;
+    for (let p = 1; p <= totalPaginas; p++) {
+      if (p === 1 || p === totalPaginas || (p >= paginaActual - rango && p <= paginaActual + rango)) {
+        html += `<button class="${p === paginaActual ? 'active' : ''}" onclick="buscarPagina(${p})">${p}</button>`;
+      } else if (p === paginaActual - rango - 1 || p === paginaActual + rango + 1) {
+        html += `<span class="ellipsis">…</span>`;
+      }
+    }
+
+    html += `<button onclick="buscarPagina(${paginaActual + 1})" ${paginaActual === totalPaginas ? 'disabled' : ''}>Siguiente ›</button>`;
+    cont.innerHTML = html;
+  }
+
+  function cambiarVista(vista) {
+    vistaActual = vista;
+    document.getElementById('btnTarjetas').classList.toggle('active', vista === 'tarjetas');
+    document.getElementById('btnTabla').classList.toggle('active', vista === 'tabla');
+    if (ultimosResultados.length > 0) {
+      if (vista === 'tarjetas') mostrarResultadosTarjetas(ultimosResultados);
+      else mostrarResultadosTabla(ultimosResultados);
+    }
+  }
+
+  async function exportar(formato) {
+    if (totalRegistros === 0) { mostrarStatus('No hay resultados para exportar', 'error'); return; }
+
+    const btn = document.getElementById(formato === 'excel' ? 'btnExcel' : 'btnPdf');
+    const textoOriginal = btn.textContent;
+    btn.textContent = 'Generando…';
+    btn.disabled = true;
+
+    let body;
+    if (tipoBusquedaActual === 'simple') {
+      body = { tipo: 'simple', campo: document.getElementById('campo').value, criterio: document.getElementById('criterio').value };
+    } else if (tipoBusquedaActual === 'multiple-avanzada') {
+      body = {
+        tipo: 'multiple-avanzada',
+        criterios: {
+          VC_DNI: parsearValoresTextarea('maDni'),
+          VC_NOMBRE: parsearValoresTextarea('maNombre'),
+          VC_PATERNO: parsearValoresTextarea('maPaterno'),
+          VC_MATERNO: parsearValoresTextarea('maMaterno'),
+          VC_DEPARTAMENTO: parsearValoresTextarea('maDepartamento')
+        }
+      };
+    } else if (tipoBusquedaActual === 'multiple') {
+      const rawMulti = document.getElementById('valoresMultiple').value;
+      const valoresMulti = rawMulti.split(/[\n,]+/).map(v => v.trim()).filter(Boolean);
+      body = { tipo: 'multiple', campo: document.getElementById('campoMultiple').value, valores: valoresMulti };
+    } else {
+      body = {
+        tipo: 'avanzada',
+        criterios: {
+          VC_DNI: document.getElementById('dni').value,
+          VC_NOMBRE: document.getElementById('nombre').value,
+          VC_PATERNO: document.getElementById('paterno').value,
+          VC_MATERNO: document.getElementById('materno').value,
+          VC_DEPARTAMENTO: document.getElementById('departamento').value
+        }
+      };
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/exportar/${formato}`, {
+        method: 'POST', mode: 'cors', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify(body)
+      });
+
+      if (response.status === 401) { sessionStorage.clear(); window.location.href = 'index.html'; return; }
+      if (!response.ok) {
+        const data = await leerRespuestaJson(response);
+        mostrarStatus('Error al exportar: ' + (data.error || 'desconocido'), 'error');
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `resultados_rbu_${Date.now()}.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      mostrarStatus(`Archivo ${formato.toUpperCase()} generado correctamente`, 'success');
+    } catch (error) {
+      mostrarStatus('Error al exportar: ' + error.message, 'error');
+    } finally {
+      btn.textContent = textoOriginal;
+      btn.disabled = false;
+    }
+  }
+
+  // Contador en tiempo real del textarea múltiple
+  document.addEventListener('DOMContentLoaded', () => {
+    const textarea = document.getElementById('valoresMultiple');
+    const contador = document.getElementById('contadorValores');
+    if (textarea && contador) {
+      textarea.addEventListener('input', () => {
+        const vals = textarea.value.split(/[\n,]+/).map(v => v.trim()).filter(Boolean);
+        contador.textContent = `${vals.length} valor${vals.length !== 1 ? 'es' : ''}`;
+        contador.style.color = vals.length > 200 ? 'var(--rojo-600)' : 'var(--gris-600)';
+      });
+    }
+  });
+
+  async function buscarMultiple(pagina) {
+    const campo = document.getElementById('campoMultiple').value;
+    const raw = document.getElementById('valoresMultiple').value;
+    const valores = raw.split(/[\n,]+/).map(v => v.trim()).filter(Boolean);
+
+    if (!campo) { mostrarStatus('Selecciona un campo', 'error'); return; }
+    if (valores.length === 0) { mostrarStatus('Ingresa al menos un valor', 'error'); return; }
+    if (valores.length > 200) { mostrarStatus('Máximo 200 valores por búsqueda', 'error'); return; }
+
+    mostrarSpinner('spinner-multiple', true);
+    document.getElementById('btnBuscarMultiple').disabled = true;
+    mostrarEsqueleto();
+
+    let controller = null, timeoutId = null;
+    try {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      const response = await fetch(`${apiBaseUrl}/buscar-multiple`, {
+        method: 'POST', mode: 'cors', cache: 'no-store', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify({ campo, valores, pagina, porPagina: POR_PAGINA })
+      });
+
+      const data = await leerRespuestaJson(response);
+
+      if (response.status === 401) { sessionStorage.clear(); window.location.href = 'index.html'; return; }
+      if (response.status === 429) { mostrarStatus(data.error, 'error'); return; }
+      if (!response.ok) { mostrarStatus('Error: ' + (data.error || 'desconocido') + (data.detalle ? ' — ' + data.detalle : ''), 'error'); return; }
+
+      paginaActual = data.pagina; totalPaginas = data.totalPaginas; totalRegistros = data.total;
+      ultimosResultados = data.data;
+      mostrarResultados(data.data, data.total);
+      mostrarStatus(`Se encontraron ${data.total} registro(s) para ${valores.length} valor(es) buscados`, 'success');
+    } catch (error) {
+      const mensaje = error.name === 'AbortError' ? 'La búsqueda tardó demasiado.' : 'Error de conexión: ' + error.message;
+      mostrarStatus(mensaje, 'error');
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      mostrarSpinner('spinner-multiple', false);
+      document.getElementById('btnBuscarMultiple').disabled = false;
+    }
+  }
+
+  function limpiar() {
+    // Limpiar todos los formularios de búsqueda
+    const campos = ['campo', 'criterio', 'dni', 'nombre', 'paterno', 'materno',
+                    'departamento', 'campoMultiple', 'valoresMultiple'];
+    campos.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    // Resetear contador de valores múltiples
+    const contador = document.getElementById('contadorValores');
+    if (contador) {
+      contador.textContent = '0 valores';
+      contador.style.color = '';
+    }
+
+    // Limpiar textareas de búsqueda múltiple avanzada y sus contadores
+    ['maDni', 'maNombre', 'maPaterno', 'maMaterno', 'maDepartamento'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['cnt-maDni', 'cnt-maNombre', 'cnt-maPaterno', 'cnt-maMaterno', 'cnt-maDepartamento'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '';
+    });
+
+    // Ocultar resultados y mensajes
+    document.getElementById('resultsContainer').classList.remove('active');
+    document.getElementById('status').style.display = 'none';
+
+    // Resetear estado
+    ultimosResultados = [];
+    totalRegistros = 0;
+    paginaActual = 1;
+    totalPaginas = 1;
+  }
+  function parsearValoresTextarea(id) {
+    const el = document.getElementById(id);
+    if (!el || !el.value.trim()) return [];
+    return el.value
+      .replace(/\r/g, '')
+      .split(/[\n,]+/)
+      .map(v => v.trim())
+      .filter(Boolean)
+      .slice(0, 200);
+  }
+
+  function actualizarContador(idTextarea, idContador) {
+    const vals = parsearValoresTextarea(idTextarea);
+    const el = document.getElementById(idContador);
+    if (!el) return;
+    el.textContent = vals.length > 0 ? `(${vals.length})` : '';
+    el.style.color = vals.length > 200 ? 'var(--rojo-600)' : 'var(--gris-600)';
+  }
+
+  async function buscarMultipleAvanzado(pagina) {
+    const criterios = {
+      VC_DNI: parsearValoresTextarea('maDni'),
+      VC_NOMBRE: parsearValoresTextarea('maNombre'),
+      VC_PATERNO: parsearValoresTextarea('maPaterno'),
+      VC_MATERNO: parsearValoresTextarea('maMaterno'),
+      VC_DEPARTAMENTO: parsearValoresTextarea('maDepartamento')
+    };
+
+    // Filtrar campos sin valores
+    const criteriosFiltrados = {};
+    for (const [k, v] of Object.entries(criterios)) {
+      if (v.length > 0) criteriosFiltrados[k] = v;
+    }
+
+    if (Object.keys(criteriosFiltrados).length === 0) {
+      mostrarStatus('Ingresa al menos un criterio de búsqueda', 'error');
+      return;
+    }
+
+    // Validar máximo por campo
+    for (const [k, v] of Object.entries(criteriosFiltrados)) {
+      if (v.length > 200) {
+        mostrarStatus(`Máximo 200 valores por campo (${k} tiene ${v.length})`, 'error');
+        return;
+      }
+    }
+
+    mostrarSpinner('spinner-mavanzada', true);
+    document.getElementById('btnBuscarMAvanzada').disabled = true;
+    mostrarEsqueleto();
+
+    let controller = null, timeoutId = null;
+    try {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      const response = await fetch(`${apiBaseUrl}/buscar-multiple-avanzado`, {
+        method: 'POST', mode: 'cors', cache: 'no-store', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify({ criterios: criteriosFiltrados, pagina, porPagina: POR_PAGINA })
+      });
+
+      const data = await leerRespuestaJson(response);
+
+      if (response.status === 401) { sessionStorage.clear(); window.location.href = 'index.html'; return; }
+      if (response.status === 429) { mostrarStatus(data.error, 'error'); return; }
+      if (!response.ok) { mostrarStatus('Error: ' + (data.error || 'desconocido') + (data.detalle ? ' — ' + data.detalle : ''), 'error'); return; }
+
+      paginaActual = data.pagina; totalPaginas = data.totalPaginas; totalRegistros = data.total;
+      ultimosResultados = data.data;
+      mostrarResultados(data.data, data.total);
+
+      const resumen = Object.entries(criteriosFiltrados)
+        .map(([k, v]) => `${v.length} ${k.replace('VC_', '')}`)
+        .join(', ');
+      mostrarStatus(`Se encontraron ${data.total} registro(s) · Criterios: ${resumen}`, 'success');
+    } catch (error) {
+      const mensaje = error.name === 'AbortError' ? 'La búsqueda tardó demasiado.' : 'Error de conexión: ' + error.message;
+      mostrarStatus(mensaje, 'error');
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      mostrarSpinner('spinner-mavanzada', false);
+      document.getElementById('btnBuscarMAvanzada').disabled = false;
+    }
+  }
+
+</script>
+</body>
+</html>
